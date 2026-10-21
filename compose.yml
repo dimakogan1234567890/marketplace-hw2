@@ -1,0 +1,37 @@
+services:
+  db:
+    image: postgres:17.6
+    environment:
+      POSTGRES_DB: marketplace
+      POSTGRES_USER: market
+      POSTGRES_PASSWORD: market
+    ports: ["127.0.0.1:5432:5432"]
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U market -d marketplace"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+  migrate:
+    image: flyway/flyway:11.7.2
+    command: ["migrate"]
+    environment:
+      FLYWAY_URL: jdbc:postgresql://db:5432/marketplace
+      FLYWAY_USER: market
+      FLYWAY_PASSWORD: market
+      FLYWAY_CONNECT_RETRIES: 20
+    volumes: ["./db/migration:/flyway/sql:ro"]
+    depends_on:
+      db: {condition: service_healthy}
+  api:
+    build: .
+    ports: ["127.0.0.1:8080:8080"]
+    environment:
+      DATABASE_URL: postgresql://market:market@db:5432/marketplace
+      JWT_SECRET: ${JWT_SECRET:-local-demo-secret-change-me-at-least-32-bytes}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Admin-demo-password-123}
+      ORDER_INTERVAL_MINUTES: ${ORDER_INTERVAL_MINUTES:-1}
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+volumes:
+  pgdata:

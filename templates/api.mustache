@@ -1,0 +1,27 @@
+# Generated from OpenAPI. Do not edit.
+from uuid import UUID
+from fastapi import APIRouter, Body, Path, Query, Request
+{{#imports}}
+{{import}}
+{{/imports}}
+from app import handlers
+from app.http import ContractRoute, render
+
+router = APIRouter(route_class=ContractRoute)
+{{#operations}}{{#operation}}
+
+@router.{{#lambda.lowercase}}{{httpMethod}}{{/lambda.lowercase}}(
+    "{{{path}}}",
+    status_code={{vendorExtensions.x-success-code}},
+    response_model={{returnType}}{{^returnType}}None{{/returnType}},
+    tags=[{{#tags}}"{{name}}"{{^-last}}, {{/-last}}{{/tags}}],
+)
+def {{operationId}}(
+    request: Request,
+    {{#allParams}}
+    {{>endpoint_argument_definition}},
+    {{/allParams}}
+):
+    result = handlers.{{operationId}}(request.state.actor{{#allParams}}, {{>impl_argument}}{{/allParams}})
+    return render(result, {{vendorExtensions.x-success-code}})
+{{/operation}}{{/operations}}

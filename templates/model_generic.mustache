@@ -1,0 +1,41 @@
+from __future__ import annotations
+from decimal import Decimal
+from uuid import UUID
+from datetime import datetime, date
+from typing import Annotated, Optional, Any, List, Dict, Union, ClassVar
+from pydantic import AwareDatetime, BaseModel, BeforeValidator, ConfigDict, Field, field_validator
+from pydantic import StrictStr, StrictInt, StrictFloat, StrictBool
+import re
+{{#vendorExtensions.x-py-datetime-imports}}{{#-first}}from datetime import{{/-first}} {{{.}}}{{^-last}},{{/-last}}{{/vendorExtensions.x-py-datetime-imports}}
+{{#vendorExtensions.x-py-typing-imports}}{{#-first}}from typing import{{/-first}} {{{.}}}{{^-last}},{{/-last}}{{/vendorExtensions.x-py-typing-imports}}
+{{#vendorExtensions.x-py-pydantic-imports}}{{#-first}}from pydantic import{{/-first}} {{{.}}}{{^-last}},{{/-last}}{{/vendorExtensions.x-py-pydantic-imports}}
+{{#vendorExtensions.x-py-model-imports}}
+{{{.}}}
+{{/vendorExtensions.x-py-model-imports}}
+from app.contract_types import number_only, datetime_only
+
+class {{classname}}(BaseModel):
+    model_config = ConfigDict(populate_by_name=True, extra="{{#vendorExtensions.x-forbid-extra}}forbid{{/vendorExtensions.x-forbid-extra}}{{^vendorExtensions.x-forbid-extra}}allow{{/vendorExtensions.x-forbid-extra}}")
+{{#vars}}
+    {{name}}: {{#vendorExtensions.x-contract-type}}{{{.}}}{{/vendorExtensions.x-contract-type}}{{^vendorExtensions.x-contract-type}}{{{vendorExtensions.x-py-typing}}}{{/vendorExtensions.x-contract-type}}
+{{/vars}}
+{{#vars}}
+{{#vendorExtensions.x-regex}}
+
+    @field_validator('{{name}}')
+    @classmethod
+    def validate_{{name}}_pattern(cls, value):
+        if value is not None and re.fullmatch(r"{{{.}}}", value) is None:
+            raise ValueError("invalid pattern")
+        return value
+{{/vendorExtensions.x-regex}}
+{{#isEnum}}
+
+    @field_validator('{{name}}')
+    @classmethod
+    def validate_{{name}}_enum(cls, value):
+        if value is not None and value not in ({{#allowableValues}}{{#enumVars}}{{{value}}},{{/enumVars}}{{/allowableValues}}):
+            raise ValueError("invalid enum value")
+        return value
+{{/isEnum}}
+{{/vars}}
